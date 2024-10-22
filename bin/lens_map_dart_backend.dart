@@ -359,6 +359,6 @@ void main(List<String> arguments) async {
     return Response.ok(image, headers: {'Content-Type': 'image/jpeg'});
   });
 
-  var server = await serve(router, 'localhost', 2302);
+  var server = await serve(router, '0.0.0.0', 2302);
   print('Server listening on port ${server.port}');
 }

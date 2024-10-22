@@ -1,0 +1,21 @@
+name: lens_map_dart_backend
+description: A sample command-line application.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.5.3
+
+# Add regular dependencies here.
+dependencies:
+  shelf:
+  shelf_router:
+  shelf_web_socket:
+  mysql_client:
+  mongo_dart: ^0.10.3
+  mailer:
+  uuid:
+  image:
+dev_dependencies:
+  lints: ^4.0.0
+  test: ^1.24.0

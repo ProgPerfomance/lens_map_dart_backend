@@ -262,7 +262,7 @@ void main(List<String> arguments) async {
   });
 
   router.get('/locations/<city>/<lang>', (Request request, String city, String lang) async {
-    requestLog('GET', '/locations', null);
+    requestLog('GET', '/locations/$city/$lang', null);
     print(request.handlerPath);
     final response = await db.collection('locations').find(SelectorBuilder().eq('city_id', city)).toList();
     final responseList = [];

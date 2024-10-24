@@ -100,6 +100,7 @@ void main(List<String> arguments) async {
 
   router.get('/searchCities/<query>/<lang>',
       (Request request, String query, String lang) async {
+        requestLog('GET', '/searchCities/$query/$lang', null);
     String decodedData = Uri.decodeComponent(query);
     print(decodedData);
 
@@ -137,6 +138,7 @@ void main(List<String> arguments) async {
   });
 
   router.get('/categories/<lang>', (Request request, String lang) async {
+    requestLog('GET', '/categories/$lang', null);
     final response = await db.collection('categories').find().toList();
     List categories = [];
 
@@ -149,6 +151,7 @@ void main(List<String> arguments) async {
 
   router.get('/cities/<country>/<lang>',
       (Request request, String country, String lang) async {
+        requestLog('GET', '/cities/$country/$lang', null);
     String decodedCountry = Uri.decodeComponent(country);
 
     var countryData = await db
@@ -185,6 +188,7 @@ void main(List<String> arguments) async {
     String langDec = Uri.decodeComponent(lang);
     var json = await request.readAsString();
     var data = jsonDecode(json);
+    requestLog('POST', '/auth/$lang', data);
     final response = await db.collection('users').findOne(SelectorBuilder()
             .eq('email', data['email'] ?? '')
             .eq('password', data['password'] ?? '')
@@ -247,6 +251,7 @@ void main(List<String> arguments) async {
   router.post('/location', (Request request) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
+    requestLog('POST', '/locations', data);
     String uuid = Uuid().v1();
     LocationEntity locationEntity = LocationEntity(
       long: data['long'],
@@ -284,6 +289,7 @@ void main(List<String> arguments) async {
   router.post('/services', (Request request) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
+    requestLog('POST', '/services', data);
     print(data);
     ServiceEntity serviceEntity = ServiceEntity().fromApi(data);
     String ssid = Uuid().v1();
@@ -296,6 +302,7 @@ void main(List<String> arguments) async {
   router.put('/services/<id>', (Request request, String id) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
+    requestLog('PUT', '/services/$id', data);
     await db.collection('services').updateOne(
         SelectorBuilder().id(ObjectId.fromHexString(id)),
         modify
@@ -308,6 +315,7 @@ void main(List<String> arguments) async {
   });
 
   router.delete('/services/<id>', (Request request, String id) async {
+    requestLog('DELETE', '/services/$id', null);
     await db
         .collection('services')
         .deleteOne(SelectorBuilder().id(ObjectId.fromHexString(id)));
@@ -315,6 +323,7 @@ void main(List<String> arguments) async {
   });
 
   router.get('/news/<lang>', (Request request, String lang) async {
+    requestLog('GET', '/news', null);
     final response =
         await db.collection('news').find(SelectorBuilder().eq('lang', lang)).toList();
     return Response.ok(jsonEncode(response),  headers: {'Content-Type': 'application/json'});
@@ -323,7 +332,7 @@ void main(List<String> arguments) async {
   router.post('/news', (Request request) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
-
+    requestLog('POST', '/news', data);
     String nnid = Uuid().v1();
     if (data['img'] != null) {
       //   File file = File();
@@ -347,6 +356,7 @@ void main(List<String> arguments) async {
 
   router.get('/services/<uid>/<lang>',
       (Request request, String uid, String lang) async {
+        requestLog('GET', '/services/$uid/$lang', null);
     final response = await db
         .collection('services')
         .find(SelectorBuilder().eq('user_id', uid))
@@ -377,6 +387,7 @@ void main(List<String> arguments) async {
   router.post('/createUser', (Request request) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
+    requestLog('POST', '/createUser', data);
     var userData = data['data'];
     String uuid = Uuid().v1();
     if (data['avatar'] != null) {
@@ -407,12 +418,14 @@ void main(List<String> arguments) async {
   });
 
   router.get('/getUserAvatar/<uid>', (Request request, String uid) async {
+    requestLog('GET', 'getUserAvatar/$uid', null);
     final file = File('data/avatars/avatar_$uid.jpeg');
     final image = await file.readAsBytes();
     return Response.ok(image, headers: {'Content-Type': 'image/jpeg'});
   });
 
   router.get('/newsImage/<id>', (Request request, String id) async {
+    requestLog('GET', 'newsImage/$id', null);
     final file = File('data/news/news_$id.jpeg');
     final image = await file.readAsBytes();
     return Response.ok(image, headers: {'Content-Type': 'image/jpeg'});

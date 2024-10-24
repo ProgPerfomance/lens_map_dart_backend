@@ -15,6 +15,8 @@ void main(List<String> arguments) async {
   var db = Db("mongodb://localhost:27017/lens_map");
   await db.open();
 
+  //await db.collection('locations').insertMany(locations);
+
   Router router = Router();
 
   router.get('/countries/<lang>', (Request request, String lang) async {
@@ -259,6 +261,26 @@ void main(List<String> arguments) async {
     db.collection('locations').insertOne({});
   });
 
+  router.get('/locations/<city>/<lang>', (Request request, String city, String lang) async {
+    requestLog('GET', '/locations', null);
+    print(request.handlerPath);
+    final response = await db.collection('locations').find(SelectorBuilder().eq('city_id', city)).toList();
+    final responseList = [];
+    for(var item in response) {
+      responseList.add({
+        'name': item['name_$lang'],
+        'description': item['description_$lang'],
+        'lat': item['lat'],
+        'long': item['long'],
+        'image_url': item['image_url'],
+        'address': item['address'],
+      });
+    }
+    return Response.ok(jsonEncode(responseList), headers: {'Content-Type': 'application/json'});
+  });
+
+
+
   router.post('/services', (Request request) async {
     var json = await request.readAsString();
     var data = jsonDecode(json);
@@ -292,6 +314,37 @@ void main(List<String> arguments) async {
     return Response.ok('deleted');
   });
 
+  router.get('/news/<lang>', (Request request, String lang) async {
+    final response =
+        await db.collection('news').find(SelectorBuilder().eq('lang', lang)).toList();
+    return Response.ok(jsonEncode(response),  headers: {'Content-Type': 'application/json'});
+  });
+
+  router.post('/news', (Request request) async {
+    var json = await request.readAsString();
+    var data = jsonDecode(json);
+
+    String nnid = Uuid().v1();
+    if (data['img'] != null) {
+      //   File file = File();
+      File file = await File('data/news/news$nnid.jpeg');
+      file.create();
+      await file.open(mode: FileMode.write);
+      List<int> imageList = base64Decode(data['img']);
+      await file.writeAsBytes(imageList);
+      return Response.ok('created');
+    }
+    Map<String, dynamic>
+    dData = {
+      'title': data['title'],
+      'nnid': nnid,
+      'body': data['body'],
+      'lang': data['lang'],
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    await db.collection('news').insertOne(dData);
+  });
+
   router.get('/services/<uid>/<lang>',
       (Request request, String uid, String lang) async {
     final response = await db
@@ -303,11 +356,12 @@ void main(List<String> arguments) async {
       final categoryName = await db.collection('categories').findOne(
           SelectorBuilder()
               .id(ObjectId.fromHexString(item['category_id']))
-              .fields(['name_$lang']));
+              .fields(['name_$lang', 'image_url']));
       print(categoryName);
       responseList.add({
         'name': item['name'],
         'id': item['_id'],
+        'image_url': categoryName?['image_url'],
         // 'user_id': item['user_id'],
         'price_min': item['price_min'],
         'price_max': item['price_max'],
@@ -354,11 +408,40 @@ void main(List<String> arguments) async {
 
   router.get('/getUserAvatar/<uid>', (Request request, String uid) async {
     final file = File('data/avatars/avatar_$uid.jpeg');
-    print(file.uri);
+    final image = await file.readAsBytes();
+    return Response.ok(image, headers: {'Content-Type': 'image/jpeg'});
+  });
+
+  router.get('/newsImage/<id>', (Request request, String id) async {
+    final file = File('data/news/news_$id.jpeg');
     final image = await file.readAsBytes();
     return Response.ok(image, headers: {'Content-Type': 'image/jpeg'});
   });
 
   var server = await serve(router, '0.0.0.0', 2302);
   print('Server listening on port ${server.port}');
+}
+
+
+List<Map<String, dynamic>> locations = [
+  LocationEntity(
+    photographs: [],
+    countryId: '6707ed37d46c6cc833000000',
+    cityId: '6707ed37d46c6ac833000000',
+    nameEn: 'Temple of the Holy Family (Sagrada Familia)',
+    nameRu: 'Храм Святого Семейства (Саграда Фамилия)',
+    nameSp: 'Templo de la Sagrada Familia',
+    address: 'Carrer de Mallorca, 401, 08013 Barcelona, Spain',
+    lat: 41.403191,
+    long: 2.174840,
+    lid: Uuid().v1(),
+    descriptionRu: 'Этот шедевр Антонио Гауди отличается уникальной архитектурой. Его впечатляющие фасады и интерьеры создают идеальные условия для создания художественных фотографий.',
+    descriptionEn: 'This masterpiece by Antoni Gaudí stands out for its unique architecture. Its impressive facades and interiors create perfect conditions for artistic photography.',
+    descriptionSp: 'Esta obra maestra de Antoni Gaudí se destaca por su arquitectura única. Sus impresionantes fachadas e interiores crean condiciones perfectas para la fotografía artística.',
+    imageUrl: 'https://albergueesplaibarcelona.com/wp-content/uploads/2020/03/sagrada-familia-552084_1920.jpg',
+  ).createDBJson(),
+];
+
+void requestLog(method, point, data) {
+  print('${DateTime.now()}\n$method\n$point\nData: $data');
 }
